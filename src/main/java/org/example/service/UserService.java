@@ -1,5 +1,6 @@
 package org.example.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.dto.request.UserRequest;
 import org.example.dto.response.UserResponse;
 import org.example.entity.User;
@@ -8,6 +9,9 @@ import org.example.exceptions.ErrorCode;
 import org.example.mapper.UserMapper;
 import org.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.List;
 
+@Slf4j
 @Service
 public class UserService {
     @Autowired
@@ -23,11 +28,15 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<User> getAll(){
+        log.info("In method get users");
         return userRepository.findAll();
     }
 
+    @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse getUserById(Integer id) {
+        log.info("In method get user by id");
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -56,5 +65,16 @@ public class UserService {
 
         userMapper.updateUser(user, userRequest);
         return userRepository.save(user);
+    }
+
+    public UserResponse getMyInfo(){
+        var context = SecurityContextHolder.getContext(); //Save current login information
+        String name = context.getAuthentication().getName();
+
+        User user = userRepository.findByUsername(name).orElseThrow(
+                () -> new AppException(ErrorCode.USER_EXISTS)
+        );
+
+        return userMapper.userToUserResponse(user);
     }
 }

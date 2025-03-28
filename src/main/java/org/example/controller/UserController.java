@@ -47,4 +47,11 @@ public class UserController {
     public ApiResponse<User> updateUser(@PathVariable("id") Integer id, @RequestBody @Valid UserRequest userRequest) {
         return userMapper.userToApiResponse(userService.update(id, userRequest), 200, "User updated successfully");
     }
+
+    @GetMapping("/my-info")
+    public ApiResponse<UserResponse> getMyInfo() {
+        return ApiResponse.<UserResponse>builder()
+                .data(userService.getMyInfo())
+                .build();
+    }
 }
