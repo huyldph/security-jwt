@@ -28,12 +28,14 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
+    //Thoả mãn đk mới gọi method
     @PreAuthorize("hasRole('ADMIN')")
     public List<User> getAll(){
         log.info("In method get users");
         return userRepository.findAll();
     }
 
+    //gọi method -> kiểm tra đk ? -> kết quả : dừng
     @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse getUserById(Integer id) {
         log.info("In method get user by id");
