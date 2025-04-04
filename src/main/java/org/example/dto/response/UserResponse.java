@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.example.entity.Role;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -25,5 +26,5 @@ public class UserResponse {
 
     private LocalDate dob;
 
-    private Set<String> roles;
+    private Set<Role> roles;
 }
