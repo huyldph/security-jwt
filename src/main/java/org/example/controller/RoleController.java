@@ -31,7 +31,7 @@ public class RoleController {
         List<RoleResponse> list = roleService.getAll();
         return ApiResponse.<List<RoleResponse>>builder()
                 .code(200)
-                .message("Find all role is success")
+                .message("Find all role is success.")
                 .data(list)
                 .build();
     }
