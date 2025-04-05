@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -29,4 +30,6 @@ public class UserRequest {
     private String password;
 
     private LocalDate dob;
+
+    List<Integer> roles;
 }

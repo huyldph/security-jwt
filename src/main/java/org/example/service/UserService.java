@@ -36,7 +36,7 @@ public class UserService {
 
     //Thoả mãn đk mới gọi method
     @PreAuthorize("hasRole('ADMIN')")
-    public List<User> getAll(){
+    public List<User> getAll() {
         log.info("In method get users");
         return userRepository.findAll();
     }
@@ -70,14 +70,16 @@ public class UserService {
     }
 
     public User update(Integer id, UserRequest userRequest) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        userMapper.updateUser(user, userRequest);
+        User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        userMapper.userRequestToUser(userRequest);
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        var roles = roleRepository.findAllById(userRequest.getRoles());
+        user.setRoles(new HashSet<>(roles));
         return userRepository.save(user);
     }
 
-    public UserResponse getMyInfo(){
+    public UserResponse getMyInfo() {
         var context = SecurityContextHolder.getContext(); //Save current login information
         String name = context.getAuthentication().getName();
 

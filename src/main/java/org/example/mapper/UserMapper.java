@@ -10,6 +10,7 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
+    @Mapping(target = "roles", ignore = true)
     User userRequestToUser(UserRequest userRequest);
 
     @Mapping(target = "code", source = "code")
@@ -17,8 +18,5 @@ public interface UserMapper {
     @Mapping(target = "data", source = "user")
     ApiResponse<User> userToApiResponse(User user, Integer code, String message);
 
-    void updateUser(@MappingTarget User user, UserRequest userRequest);
-
-    @Mapping(target = "id", ignore = true)
     UserResponse userToUserResponse(User user);
 }

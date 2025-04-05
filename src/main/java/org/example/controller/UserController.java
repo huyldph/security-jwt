@@ -43,7 +43,7 @@ public class UserController {
         return userMapper.userToApiResponse(userService.save(userRequest), 200, "User created successfully");
     }
 
-    @PutMapping("{id}")
+    @PutMapping("/{id}")
     public ApiResponse<User> updateUser(@PathVariable("id") Integer id, @RequestBody @Valid UserRequest userRequest) {
         return userMapper.userToApiResponse(userService.update(id, userRequest), 200, "User updated successfully");
     }
