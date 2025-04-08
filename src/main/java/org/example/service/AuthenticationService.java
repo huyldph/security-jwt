@@ -12,6 +12,7 @@ import lombok.experimental.NonFinal;
 import org.example.dto.request.AuthenticationRequest;
 import org.example.dto.request.IntrospectRequest;
 import org.example.dto.request.LogoutRequest;
+import org.example.dto.request.RefreshRequest;
 import org.example.dto.response.AuthenticationResponse;
 import org.example.dto.response.IntrospectResponse;
 import org.example.entity.InvalidatedToken;
@@ -106,6 +107,36 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         return signedJWT;
+    }
+
+    public AuthenticationResponse refreshToken(RefreshRequest request)
+            throws ParseException, JOSEException {
+        //Kiểm tra hiệu lực của token
+        var signedJwt = verifyToken(request.getToken());
+
+        var jit = signedJwt.getJWTClaimsSet().getJWTID();
+        var expiryTime = signedJwt.getJWTClaimsSet().getExpirationTime();
+
+        //Vô hiệu hóa token cũ
+        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                .id(jit)
+                .expiryTime(expiryTime)
+                .build();
+
+        invalidatedTokenRepository.save(invalidatedToken);
+
+        var username = signedJwt.getJWTClaimsSet().getSubject();
+        var user = userRepository.findByUsername(username).orElseThrow(
+                () -> new AppException(ErrorCode.UNAUTHENTICATED)
+        );
+
+        //Tạo token mới từ thông tin user
+        var token = generateToken(user);
+
+        return AuthenticationResponse.builder()
+                .token(token)
+                .isAuthenticated(true)
+                .build();
     }
 
     public String generateToken(User user) {
