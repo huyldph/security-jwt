@@ -20,7 +20,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     private final String[] PUBLIC_ENDPOINTS = {
             "/api/users",
-            "/api/auth/login", "/api/auth/introspect", "/api/auth/logout",
+            "/api/auth/login", "/api/auth/introspect",
+            "/api/auth/logout", "/api/auth/refresh",
             "/api/vnpay/create-payment", "/api/vnpay/payment-callback"
     };
 
