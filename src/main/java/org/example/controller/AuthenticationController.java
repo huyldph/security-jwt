@@ -7,6 +7,7 @@ import lombok.experimental.FieldDefaults;
 import org.example.dto.request.ApiResponse;
 import org.example.dto.request.AuthenticationRequest;
 import org.example.dto.request.IntrospectRequest;
+import org.example.dto.request.LogoutRequest;
 import org.example.dto.response.AuthenticationResponse;
 import org.example.dto.response.IntrospectResponse;
 import org.example.service.AuthenticationService;
@@ -39,6 +40,14 @@ public class AuthenticationController {
 
         return ApiResponse.<IntrospectResponse>builder()
                 .data(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> introspect(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
+        authenticationService.logout(request);
+
+        return ApiResponse.<Void>builder()
                 .build();
     }
 }
