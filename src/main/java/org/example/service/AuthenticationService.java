@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
 import org.example.dto.request.AuthenticationRequest;
 import org.example.dto.request.IntrospectRequest;
 import org.example.dto.request.LogoutRequest;
@@ -28,10 +29,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.StringJoiner;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -43,13 +47,21 @@ public class AuthenticationService {
     @Value("${jwt.secret-key}")
     protected String SECRET_KEY;
 
+    @NonFinal
+    @Value("${jwt.valid-duration}")
+    protected Duration VALID_DURATION;
+
+    @NonFinal
+    @Value("${jwt.refresh-duration}")
+    protected Duration REFRESH_DURATION;
+
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
 
         boolean isValid = true;
 
         try {
-            verifyToken(token);
+            verifyToken(token, false);
         } catch (AppException e) {
             isValid = false;
         }
@@ -77,25 +89,31 @@ public class AuthenticationService {
     }
 
     public void logout(LogoutRequest request) throws ParseException, JOSEException {
-        var signToken = verifyToken(request.getToken());
+        try {
+            var signToken = verifyToken(request.getToken(), true);
 
-        String jit = signToken.getJWTClaimsSet().getJWTID();
-        Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+            String jit = signToken.getJWTClaimsSet().getJWTID();
+            Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-        InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                .id(jit)
-                .expiryTime(expiryTime)
-                .build();
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                    .id(jit)
+                    .expiryTime(expiryTime)
+                    .build();
 
-        invalidatedTokenRepository.save(invalidatedToken);
+            invalidatedTokenRepository.save(invalidatedToken);
+        } catch (AppException e) {
+            log.info("Token already expired");
+        }
     }
 
-    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+    private SignedJWT verifyToken(String token, Boolean isRefresh) throws JOSEException, ParseException {
         JWSVerifier verifier = new MACVerifier(SECRET_KEY.getBytes());
 
         SignedJWT signedJWT = SignedJWT.parse(token);
 
-        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        Date expirationTime = (isRefresh)
+                ? new Date(signedJWT.getJWTClaimsSet().getIssueTime().toInstant().plus(REFRESH_DURATION).toEpochMilli())
+                : signedJWT.getJWTClaimsSet().getExpirationTime();
 
         var verified = signedJWT.verify(verifier);
 
@@ -112,7 +130,7 @@ public class AuthenticationService {
     public AuthenticationResponse refreshToken(RefreshRequest request)
             throws ParseException, JOSEException {
         //Kiểm tra hiệu lực của token
-        var signedJwt = verifyToken(request.getToken());
+        var signedJwt = verifyToken(request.getToken(), true);
 
         var jit = signedJwt.getJWTClaimsSet().getJWTID();
         var expiryTime = signedJwt.getJWTClaimsSet().getExpirationTime();
@@ -146,7 +164,7 @@ public class AuthenticationService {
                 .subject(user.getUsername())
                 .issuer("SpringBootAdvance")
                 .issueTime(new Date())
-                .expirationTime(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
+                .expirationTime(Date.from(Instant.now().plus(VALID_DURATION)))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
                 .build();
